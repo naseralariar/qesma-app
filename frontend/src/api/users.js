@@ -1,13 +1,19 @@
 import client from "./client";
 
+const normalizeListResponse = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.results)) return data.results;
+  return [];
+};
+
 export const listUsers = async () => {
   const { data } = await client.get("/users/");
-  return data;
+  return normalizeListResponse(data);
 };
 
 export const listDepartments = async () => {
   const { data } = await client.get("/departments/");
-  return data;
+  return normalizeListResponse(data);
 };
 
 export const createUser = async (payload) => {
