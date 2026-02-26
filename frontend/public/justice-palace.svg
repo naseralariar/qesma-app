@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+  <rect width="100%" height="100%" fill="#e6edf5"/>
+  <g fill="#b8c6d8">
+    <rect x="250" y="300" width="1100" height="420"/>
+    <rect x="300" y="250" width="1000" height="70"/>
+    <rect x="380" y="360" width="120" height="300"/>
+    <rect x="560" y="360" width="120" height="300"/>
+    <rect x="740" y="360" width="120" height="300"/>
+    <rect x="920" y="360" width="120" height="300"/>
+    <rect x="1100" y="360" width="120" height="300"/>
+  </g>
+  <text x="800" y="820" text-anchor="middle" fill="#5a6f8b" font-size="36" font-family="Tahoma">قصر العدل - صورة افتراضية</text>
+</svg>

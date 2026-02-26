@@ -1,0 +1,13 @@
+{
+  "python.defaultInterpreterPath": "D:\\qesma new\\.venv\\Scripts\\python.exe",
+  "python.terminal.activateEnvironment": true,
+  "python.venvFolders": [
+    "${workspaceFolder}"
+  ],
+  "files.exclude": {
+    "**/.venv-*": true
+  },
+  "search.exclude": {
+    "**/.venv-*": true
+  }
+}

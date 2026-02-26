@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DB_NAME:-qesma_db}
+      POSTGRES_USER: ${DB_USER:-qesma_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change-me-db-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U qesma_user -d qesma_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_ENGINE: postgresql
+      DB_NAME: ${DB_NAME:-qesma_db}
+      DB_USER: ${DB_USER:-qesma_user}
+      DB_PASSWORD: ${DB_PASSWORD:-change-me-db-password}
+      DB_HOST: db
+      DB_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py bootstrap_system --username $${INITIAL_ADMIN_USERNAME} --password $${INITIAL_ADMIN_PASSWORD} --department-code $${INITIAL_ADMIN_DEPARTMENT} &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:

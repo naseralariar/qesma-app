@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "Qesma API",
+    "description": "Collection for debt distribution system APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost/api" },
+    { "key": "username", "value": "admin" },
+    { "key": "password", "value": "ChangeMe@123" },
+    { "key": "accessToken", "value": "" },
+    { "key": "distributionId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/auth/token/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const data = pm.response.json();",
+              "if (data.access) { pm.collectionVariables.set('accessToken', data.access); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Me",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/auth/me/"
+      }
+    },
+    {
+      "name": "Departments - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/departments/"
+      }
+    },
+    {
+      "name": "Debtors - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/debtors/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"full_name\": \"مدين تجريبي\",\n  \"civil_id\": \"123456789012\",\n  \"department\": 1\n}"
+        }
+      }
+    },
+    {
+      "name": "Distributions - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/distributions/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"debtor\": 1,\n  \"department\": 1,\n  \"distribution_type\": \"cash\",\n  \"deposit_or_sale_date\": \"2026-02-22\",\n  \"proceed_amount\": \"5000.000\",\n  \"machine_number\": \"123456780\",\n  \"distribution_date\": \"2026-02-22\",\n  \"list_type\": \"temporary\",\n  \"creditors\": [\n    {\n      \"machine_number\": \"111111110\",\n      \"creditor_name\": \"دائن أول\",\n      \"attachment_date\": \"2026-01-20\",\n      \"attachment_type\": \"تنفيذي\",\n      \"debt_amount\": \"3000.000\",\n      \"debt_rank\": 1\n    },\n    {\n      \"machine_number\": \"222222220\",\n      \"creditor_name\": \"دائن ثاني\",\n      \"attachment_date\": \"2026-01-22\",\n      \"attachment_type\": \"تنفيذي\",\n      \"debt_amount\": \"4000.000\",\n      \"debt_rank\": 2\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Distributions - Dashboard",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/distributions/dashboard/"
+      }
+    },
+    {
+      "name": "Reports - Print Distribution",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/reports/distributions/{{distributionId}}/print/"
+      }
+    },
+    {
+      "name": "Reports - Attendance Notices",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "{{baseUrl}}/reports/attendance-notices/",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"distribution_id\": {{distributionId}},\n  \"attendance_date\": \"2026-03-01\",\n  \"attendance_time\": \"10:30:00\",\n  \"location\": \"قصر العدل الجديد\",\n  \"floor\": \"3\",\n  \"room_number\": \"12\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Reports - Session Minutes",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+        "url": "{{baseUrl}}/reports/session-minutes/"
+      }
+    }
+  ]
+}
