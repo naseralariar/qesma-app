@@ -2,7 +2,7 @@ import axios from "axios";
 
 const fallbackApiBaseUrl =
   typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:8000/api`
+    ? "/api"
     : "http://127.0.0.1:8000/api";
 
 const client = axios.create({
