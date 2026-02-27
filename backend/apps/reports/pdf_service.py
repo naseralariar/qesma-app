@@ -10,6 +10,7 @@ sys.stderr = logfile
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
+from reportlab.lib.colors import HexColor
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
@@ -407,10 +408,15 @@ def _draw_body_and_lines(
     font_size=11,
     font_name=ARABIC_FONT,
     set_font_func=_set_font,
+    text_color=None,
+    draw_remaining_lines=True,
+    initial_used_lines=0,
 ):
     y = start_y_cm * cm
     set_font_func(c, font_size)
-    used_lines = 0
+    used_lines = initial_used_lines
+    if text_color is not None:
+        c.setFillColor(text_color)
 
     if body_text:
         body_lines = [line.strip() for line in str(body_text).split("\n")]
@@ -427,16 +433,20 @@ def _draw_body_and_lines(
             if used_lines >= line_count:
                 break
 
-    dotted_left_x = 2 * cm
-    dotted_right_x = c._pagesize[0] - (2 * cm)
-    while used_lines < line_count:
-        c.saveState()
-        c.setLineWidth(0.8)
-        c.setDash(1, 2)
-        c.line(dotted_left_x, y, dotted_right_x, y)
-        c.restoreState()
-        y -= line_step_cm * cm
-        used_lines += 1
+    if draw_remaining_lines:
+        dotted_left_x = 2 * cm
+        dotted_right_x = c._pagesize[0] - (2 * cm)
+        while used_lines < line_count:
+            c.saveState()
+            c.setLineWidth(0.8)
+            c.setDash(1, 2)
+            c.line(dotted_left_x, y, dotted_right_x, y)
+            c.restoreState()
+            y -= line_step_cm * cm
+            used_lines += 1
+
+    c.setFillColor(HexColor("#000000"))
+    return y, used_lines
 
 
 def _distribution_formal_header(c, distribution, page_width, page_height):
@@ -775,20 +785,61 @@ def build_session_minutes_pdf(
             f"بموجب قائمة التوزيع المؤرخة في: {distribution_date_label}\n"
             "وقد أعلن بالحضور لهذه الجلسة كلا من المدين المحجوز لديه وكذلك الدائنين الحاجزين حيث حضر الجلسة:\n"
         )
-        if page1_body.strip():
-            first_body = f"{first_body}\n{page1_body.strip()}"
+        page1_extra = page1_body.strip()
     else:
-        first_body = page1_body 
+        page1_extra = ""
+        first_body = page1_body
 
-    _draw_body_and_lines(
-        c,
-        first_body,
-        start_y_cm=22.2,
-        line_count=22,
-        font_size=13,
-        font_name=SESSION_FONT,
-        set_font_func=_set_session_font,
-    )
+    if distribution is not None:
+        y_after, used_after = _draw_body_and_lines(
+            c,
+            first_body,
+            start_y_cm=22.2,
+            line_count=22,
+            font_size=13,
+            font_name=SESSION_FONT,
+            set_font_func=_set_session_font,
+            draw_remaining_lines=False,
+        )
+
+        if page1_extra:
+            _draw_body_and_lines(
+                c,
+                page1_extra,
+                start_y_cm=y_after / cm,
+                line_count=22,
+                font_size=13,
+                font_name=SESSION_FONT,
+                set_font_func=_set_session_font,
+                text_color=HexColor("#102069"),
+                draw_remaining_lines=True,
+                initial_used_lines=used_after,
+            )
+        else:
+            _draw_body_and_lines(
+                c,
+                "",
+                start_y_cm=y_after / cm,
+                line_count=22,
+                font_size=13,
+                font_name=SESSION_FONT,
+                set_font_func=_set_session_font,
+                draw_remaining_lines=True,
+                initial_used_lines=used_after,
+            )
+    else:
+        _draw_body_and_lines(
+            c,
+            first_body,
+            start_y_cm=22.2,
+            line_count=22,
+            font_size=13,
+            font_name=SESSION_FONT,
+            set_font_func=_set_session_font,
+            text_color=HexColor("#102069"),
+            draw_remaining_lines=True,
+            initial_used_lines=0,
+        )
     _set_session_font(c, 14, bold=True)
     c.drawString(15 * cm, 3.5 * cm, _ar_text("توقيع مأمور التنفيذ"))
     c.drawRightString(6.2 * cm, 3.5 * cm, _ar_text("توقيع رئيس إدارة التنفيذ"))
@@ -804,6 +855,7 @@ def build_session_minutes_pdf(
             font_size=13,
             font_name=SESSION_FONT,
             set_font_func=_set_session_font,
+            text_color=HexColor("#102069"),
         )
         _set_session_font(c, 14, bold=True)
         c.drawString(15 * cm, 3.5 * cm, _ar_text("توقيع مأمور التنفيذ"))

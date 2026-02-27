@@ -4,19 +4,32 @@ import { useState } from "react";
 import client from "../api/client";
 import { searchDistributions } from "../api/distributions";
 
-const MAX_PAGE1_LINES = 16;
-const MAX_PAGE1_LINE_CHARS = 200;
+const MAX_PAGE1_LINES = 15;
+const MAX_PAGE2_LINES = 20;
+const MAX_LINE_CHARS = 110;
 
 const normalizePage1Body = (value) => {
   const rawLines = String(value || "").replace(/\r\n/g, "\n").split("\n");
-  const clippedLines = rawLines.slice(0, MAX_PAGE1_LINES).map((line) => line.slice(0, MAX_PAGE1_LINE_CHARS));
+  const clippedLines = rawLines.slice(0, MAX_PAGE1_LINES).map((line) => line.slice(0, MAX_LINE_CHARS));
+  return clippedLines.join("\n");
+};
+
+const normalizePage2Body = (value) => {
+  const rawLines = String(value || "").replace(/\r\n/g, "\n").split("\n");
+  const clippedLines = rawLines.slice(0, MAX_PAGE2_LINES).map((line) => line.slice(0, MAX_LINE_CHARS));
   return clippedLines.join("\n");
 };
 
 const isPage1BodyValid = (value) => {
   const lines = String(value || "").replace(/\r\n/g, "\n").split("\n");
   if (lines.length > MAX_PAGE1_LINES) return false;
-  return lines.every((line) => line.length <= MAX_PAGE1_LINE_CHARS);
+  return lines.every((line) => line.length <= MAX_LINE_CHARS);
+};
+
+const isPage2BodyValid = (value) => {
+  const lines = String(value || "").replace(/\r\n/g, "\n").split("\n");
+  if (lines.length > MAX_PAGE2_LINES) return false;
+  return lines.every((line) => line.length <= MAX_LINE_CHARS);
 };
 
 export default function SessionMinutesPage() {
@@ -72,7 +85,11 @@ export default function SessionMinutesPage() {
         return;
       }
       if (!isPage1BodyValid(form.page1_body)) {
-        setError("نص الصفحة الأولى يجب ألا يتجاوز 16 سطرًا، وبحد أقصى 200 حرف (بالمسافات) لكل سطر");
+        setError("نص الصفحة الأولى يجب ألا يتجاوز 15 سطرًا، وبحد أقصى 110 حرفًا (بالمسافات) لكل سطر");
+        return;
+      }
+      if (!isPage2BodyValid(form.page2_body)) {
+        setError("نص الصفحة الثانية يجب ألا يتجاوز 20 سطرًا، وبحد أقصى 110 حرفًا (بالمسافات) لكل سطر");
         return;
       }
       const response = await client.post("/reports/session-minutes/", form, { responseType: "blob" });
@@ -146,16 +163,17 @@ export default function SessionMinutesPage() {
         label="نص إضافي للصفحة الأولى (اختياري)"
         value={form.page1_body}
         onChange={(e) => setForm({ ...form, page1_body: normalizePage1Body(e.target.value) })}
-        helperText="الحد الأقصى: 16 سطر، وكل سطر حتى 200 حرف (شامل المسافات)"
+        helperText="الحد الأقصى: 15 سطر، وكل سطر حتى 110 حرف (شامل المسافات)"
       />
       <TextField
         fullWidth
         multiline
-        minRows={10}
-        maxRows={18}
+        minRows={12}
+        maxRows={20}
         label="نص الصفحة الثانية (اختياري - إذا تُرك فارغًا لن تُنشأ صفحة ثانية)"
         value={form.page2_body}
-        onChange={(e) => setForm({ ...form, page2_body: e.target.value })}
+        onChange={(e) => setForm({ ...form, page2_body: normalizePage2Body(e.target.value) })}
+        helperText="الحد الأقصى: 20 سطر، وكل سطر حتى 110 حرف (شامل المسافات)"
       />
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={1}>
