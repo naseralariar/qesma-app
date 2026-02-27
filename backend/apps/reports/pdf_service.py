@@ -427,8 +427,14 @@ def _draw_body_and_lines(
             if used_lines >= line_count:
                 break
 
+    dotted_left_x = 2 * cm
+    dotted_right_x = c._pagesize[0] - (2 * cm)
     while used_lines < line_count:
-        c.drawString(2 * cm, y, "........................................................................................................................................")
+        c.saveState()
+        c.setLineWidth(0.8)
+        c.setDash(1, 2)
+        c.line(dotted_left_x, y, dotted_right_x, y)
+        c.restoreState()
         y -= line_step_cm * cm
         used_lines += 1
 
