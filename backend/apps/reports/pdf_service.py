@@ -283,19 +283,20 @@ def _page_header(c, title, metadata=None):
 def _attendance_header(c):
     _draw_formal_frame(c)
     project_root = Path(__file__).resolve().parents[3]
-    state_logo = _resolve_existing_path(
-        [
-            project_root / "frontend" / "public" / "شعار الدولة.png",
-            project_root / "photo" / "شعار الدولة.png",
-        ]
-    )
-    admin_logo = _resolve_existing_path(
-        [
-            project_root / "photo" / "شعار الإدارة.png",
-            project_root / "frontend" / "public" / "photo" / "شعار الإدارة.png",
-            project_root / "frontend" / "dist" / "photo" / "شعار الإدارة.png",
-        ]
-    )
+    backend_assets = project_root / "backend" / "assets" / "images"
+    state_logo = _resolve_existing_path([
+        backend_assets / "شعار الدولة.png",
+        project_root / "assets" / "images" / "شعار الدولة.png",
+        project_root / "frontend" / "public" / "شعار الدولة.png",
+        project_root / "photo" / "شعار الدولة.png",
+    ])
+    admin_logo = _resolve_existing_path([
+        backend_assets / "شعار الإدارة.png",
+        project_root / "assets" / "images" / "شعار الإدارة.png",
+        project_root / "photo" / "شعار الإدارة.png",
+        project_root / "frontend" / "public" / "photo" / "شعار الإدارة.png",
+        project_root / "frontend" / "dist" / "photo" / "شعار الإدارة.png",
+    ])
 
     _draw_logo(c, state_logo, x_cm=16.2, y_cm=24.65, width_cm=3.15, height_cm=3.15)
     _draw_logo(c, admin_logo, x_cm=1.75, y_cm=23.3, width_cm=5, height_cm=5)
