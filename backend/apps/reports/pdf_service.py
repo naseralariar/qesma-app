@@ -2,6 +2,11 @@ from io import BytesIO
 from pathlib import Path
 from datetime import date
 
+import sys
+logfile = open("/app/printlog.txt", "a", encoding="utf-8")
+sys.stdout = logfile
+sys.stderr = logfile
+
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.units import cm
 from reportlab.lib.utils import ImageReader
@@ -71,20 +76,27 @@ def _register_arabic_fonts():
         project_dir / "assets" / "fonts" / "tradbdo.ttf",
     ]
 
+
     regular_path = next((path for path in candidates if path.exists()), None)
     bold_path = next((path for path in bold_candidates if path.exists()), None)
 
     if regular_path:
+        print(f"[fonts] Registering Arabic-Regular from: {regular_path}")
         if "Arabic-Regular" not in pdfmetrics.getRegisteredFontNames():
             pdfmetrics.registerFont(TTFont("Arabic-Regular", str(regular_path)))
         ARABIC_FONT = "Arabic-Regular"
+    else:
+        print("[fonts] No Arabic-Regular font found, fallback to Helvetica")
 
     if bold_path:
+        print(f"[fonts] Registering Arabic-Bold from: {bold_path}")
         if "Arabic-Bold" not in pdfmetrics.getRegisteredFontNames():
             pdfmetrics.registerFont(TTFont("Arabic-Bold", str(bold_path)))
         ARABIC_FONT_BOLD = "Arabic-Bold"
     elif regular_path:
         ARABIC_FONT_BOLD = ARABIC_FONT
+    else:
+        print("[fonts] No Arabic-Bold font found, fallback to Helvetica-Bold")
 
     heading_path = next(
         (
@@ -223,11 +235,13 @@ def _resolve_existing_path(paths):
 
 def _draw_logo(c, path_obj, x_cm, y_cm, width_cm, height_cm):
     if not path_obj:
+        print("[logo] No logo path provided.")
         return
+    print(f"[logo] Drawing logo from: {path_obj}")
     try:
         c.drawImage(ImageReader(str(path_obj)), x_cm * cm, y_cm * cm, width=width_cm * cm, height=height_cm * cm, preserveAspectRatio=True, mask="auto")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[logo] Failed to draw logo from {path_obj}: {e}")
 
 
 def _draw_formal_frame(c):
