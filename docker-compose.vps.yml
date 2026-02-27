@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:17
+    restart: always
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -16,6 +17,7 @@ services:
   backend:
     build:
       context: ./backend
+    restart: always
     env_file:
       - ./backend/.env.production
     environment:
@@ -43,6 +45,7 @@ services:
   frontend:
     build:
       context: ./frontend
+    restart: always
     depends_on:
       - backend
     ports:
