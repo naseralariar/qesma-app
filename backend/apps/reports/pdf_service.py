@@ -428,7 +428,9 @@ def _draw_body_and_lines(
                 break
 
     while used_lines < line_count:
+        set_font_func(c, max(6, font_size - 2))
         c.drawString(2 * cm, y, "........................................................................................................................................")
+        set_font_func(c, font_size)
         y -= line_step_cm * cm
         used_lines += 1
 
@@ -762,11 +764,10 @@ def build_session_minutes_pdf(
         officer = officer_name or "........................"
 
         first_body = (
-            f"إنه في يوم {today_day}              الموافق {today_label}                        الساعة: ...................................\n"
-            f"تم انعقاد الجلسة برئاسة الأستاذ/ {chair_name}\n"
-            f"وسكرتاريته السيد / {officer}                                         مأمور التنفيذ.\n"
-            f"ذلك لإجراء التسوية الودية بشأن توزيع حصيلة التنفيذ التي تم تحصيلها لصالح الدائنين الحاجزين على أموال المدين / {debtor_name}\n"
-            f"بموجب قائمة التوزيع المؤرخة في: {distribution_date_label}\n"
+            f"إنه في يوم {today_day} الموافق {today_label} الساعة: ...................................\n"
+            f"تم انعقاد الجلسة برئاسة الأستاذ/ {chair_name} وسكرتاريته السيد/ {officer} مأمور التنفيذ.\n"
+            f"وذلك لإجراء التسوية الودية بشأن توزيع حصيلة التنفيذ لصالح الدائنين الحاجزين على أموال المدين/ {debtor_name}.\n"
+            f"بموجب قائمة التوزيع المؤرخة في: {distribution_date_label}.\n"
             "وقد أعلن بالحضور لهذه الجلسة كلا من المدين المحجوز لديه وكذلك الدائنين الحاجزين حيث حضر الجلسة:\n"
         )
         if page1_body.strip():
@@ -778,7 +779,7 @@ def build_session_minutes_pdf(
         c,
         first_body,
         start_y_cm=22.2,
-        line_count=22,
+        line_count=14,
         font_size=13,
         font_name=SESSION_FONT,
         set_font_func=_set_session_font,
@@ -794,7 +795,7 @@ def build_session_minutes_pdf(
             c,
             page2_body.strip(),
             start_y_cm=22.2,
-            line_count=20,
+            line_count=14,
             font_size=13,
             font_name=SESSION_FONT,
             set_font_func=_set_session_font,
