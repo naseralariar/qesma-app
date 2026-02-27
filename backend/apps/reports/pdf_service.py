@@ -33,18 +33,17 @@ def _register_arabic_fonts():
     global ARABIC_FONT, ARABIC_FONT_BOLD, HEADING_FONT_BOLD, SESSION_FONT, SESSION_FONT_BOLD
 
     backend_dir = Path(__file__).resolve().parents[2]
-    project_dir = backend_dir.parent
     candidates = [
-        project_dir / "assets" / "fonts" / "NotoNaskhArabic-Regular.ttf",
-        project_dir / "assets" / "fonts" / "NotoSansArabic-Regular.ttf",
+        backend_dir / "assets" / "fonts" / "NotoNaskhArabic-Regular.ttf",
+        backend_dir / "assets" / "fonts" / "NotoSansArabic-Regular.ttf",
         Path("C:/Windows/Fonts/tahoma.ttf"),
         Path("C:/Windows/Fonts/arial.ttf"),
         Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
         Path("/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf"),
     ]
     bold_candidates = [
-        project_dir / "assets" / "fonts" / "NotoNaskhArabic-Bold.ttf",
-        project_dir / "assets" / "fonts" / "NotoSansArabic-Bold.ttf",
+        backend_dir / "assets" / "fonts" / "NotoNaskhArabic-Bold.ttf",
+        backend_dir / "assets" / "fonts" / "NotoSansArabic-Bold.ttf",
         Path("C:/Windows/Fonts/tahomabd.ttf"),
         Path("C:/Windows/Fonts/arialbd.ttf"),
         Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"),
@@ -58,22 +57,22 @@ def _register_arabic_fonts():
         Path("C:/Windows/Fonts/PTBoldHeading.ttf"),
         Path("C:/Windows/Fonts/ptboldheading.ttf"),
         Path("C:/Windows/Fonts/PT Bold Heading.ttf"),
-        project_dir / "assets" / "fonts" / "PTBoldHeading.ttf",
-        project_dir / "assets" / "fonts" / "ptboldheading.ttf",
+        backend_dir / "assets" / "fonts" / "PTBoldHeading.ttf",
+        backend_dir / "assets" / "fonts" / "ptboldheading.ttf",
     ]
     session_regular_candidates = [
         Path("C:/Windows/Fonts/trado.ttf"),
         Path("C:/Windows/Fonts/Atrado.ttf"),
         Path("C:/Windows/Fonts/BTRADO.TTF"),
         Path("C:/Windows/Fonts/tahoma.ttf"),
-        project_dir / "assets" / "fonts" / "trado.ttf",
+        backend_dir / "assets" / "fonts" / "trado.ttf",
     ]
     session_bold_candidates = [
         Path("C:/Windows/Fonts/tradbdo.ttf"),
         Path("C:/Windows/Fonts/Atradbdo.ttf"),
         Path("C:/Windows/Fonts/BTRADBDO.TTF"),
         Path("C:/Windows/Fonts/tahomabd.ttf"),
-        project_dir / "assets" / "fonts" / "tradbdo.ttf",
+        backend_dir / "assets" / "fonts" / "tradbdo.ttf",
     ]
 
 
@@ -296,20 +295,13 @@ def _page_header(c, title, metadata=None):
 
 def _attendance_header(c):
     _draw_formal_frame(c)
-    project_root = Path(__file__).resolve().parents[3]
-    backend_assets = project_root / "backend" / "assets" / "images"
+    backend_dir = Path(__file__).resolve().parents[2]
+    backend_assets = backend_dir / "assets" / "images"
     state_logo = _resolve_existing_path([
         backend_assets / "شعار الدولة.png",
-        project_root / "assets" / "images" / "شعار الدولة.png",
-        project_root / "frontend" / "public" / "شعار الدولة.png",
-        project_root / "photo" / "شعار الدولة.png",
     ])
     admin_logo = _resolve_existing_path([
         backend_assets / "شعار الإدارة.png",
-        project_root / "assets" / "images" / "شعار الإدارة.png",
-        project_root / "photo" / "شعار الإدارة.png",
-        project_root / "frontend" / "public" / "photo" / "شعار الإدارة.png",
-        project_root / "frontend" / "dist" / "photo" / "شعار الإدارة.png",
     ])
 
     _draw_logo(c, state_logo, x_cm=16.2, y_cm=24.65, width_cm=3.15, height_cm=3.15)
@@ -324,20 +316,14 @@ def _attendance_header(c):
 
 def _session_minutes_header(c, title, metadata=None):
     _draw_formal_frame(c)
-    project_root = Path(__file__).resolve().parents[3]
-    state_logo = _resolve_existing_path(
-        [
-            project_root / "frontend" / "public" / "شعار الدولة.png",
-            project_root / "photo" / "شعار الدولة.png",
-        ]
-    )
-    admin_logo = _resolve_existing_path(
-        [
-            project_root / "photo" / "شعار الإدارة.png",
-            project_root / "frontend" / "public" / "photo" / "شعار الإدارة.png",
-            project_root / "frontend" / "dist" / "photo" / "شعار الإدارة.png",
-        ]
-    )
+    backend_dir = Path(__file__).resolve().parents[2]
+    backend_assets = backend_dir / "assets" / "images"
+    state_logo = _resolve_existing_path([
+        backend_assets / "شعار الدولة.png",
+    ])
+    admin_logo = _resolve_existing_path([
+        backend_assets / "شعار الإدارة.png",
+    ])
 
     _draw_logo(c, state_logo, x_cm=16.2, y_cm=24.65, width_cm=3.15, height_cm=3.15)
     _draw_logo(c, admin_logo, x_cm=1.75, y_cm=23.3, width_cm=5, height_cm=5)
@@ -456,20 +442,14 @@ def _distribution_formal_header(c, distribution, page_width, page_height):
     c.setLineWidth(0.6)
     c.rect(inner_margin, inner_margin, page_width - (2 * inner_margin), page_height - (2 * inner_margin))
 
-    project_root = Path(__file__).resolve().parents[3]
-    state_logo = _resolve_existing_path(
-        [
-            project_root / "frontend" / "public" / "شعار الدولة.png",
-            project_root / "photo" / "شعار الدولة.png",
-        ]
-    )
-    admin_logo = _resolve_existing_path(
-        [
-            project_root / "photo" / "شعار الإدارة.png",
-            project_root / "frontend" / "public" / "photo" / "شعار الإدارة.png",
-            project_root / "frontend" / "dist" / "photo" / "شعار الإدارة.png",
-        ]
-    )
+    backend_dir = Path(__file__).resolve().parents[2]
+    backend_assets = backend_dir / "assets" / "images"
+    state_logo = _resolve_existing_path([
+        backend_assets / "شعار الدولة.png",
+    ])
+    admin_logo = _resolve_existing_path([
+        backend_assets / "شعار الإدارة.png",
+    ])
 
     state_logo_w = 2.8
     state_logo_h = 2.8
