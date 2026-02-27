@@ -539,7 +539,7 @@ def build_distribution_pdf(distribution):
     page_width, page_height = page_size
     c = NumberedCanvas(buffer, pagesize=page_size)
 
-    creditors = list(distribution.creditors.all())
+    creditors = list(distribution.creditors.all().order_by("debt_rank", "attachment_date", "id"))
     col_labels = [
         "ملاحظات",
         "مبلغ القسمة",

@@ -92,5 +92,5 @@ class Creditor(models.Model):
     distribution_amount = models.DecimalField(max_digits=16, decimal_places=3, default=Decimal("0.000"))
 
     class Meta:
-        ordering = ["debt_rank", "attachment_date", "id"]
+        ordering = ["id"]
         indexes = [models.Index(fields=["machine_number"]), models.Index(fields=["creditor_name"])]
