@@ -33,7 +33,6 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "django_filters",
-    "axes",
     "apps.accounts",
     "apps.core",
     "apps.distributions",
@@ -48,7 +47,6 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "axes.middleware.AxesMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -215,11 +213,6 @@ if not DEBUG:
     if DB_ENGINE == "postgresql" and os.getenv("DB_PASSWORD", "qesma_pass") == "qesma_pass":
         raise ImproperlyConfigured("DB_PASSWORD الافتراضية غير مسموحة في الإنتاج")
 
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 1
-AXES_LOCKOUT_CALLABLE = None
-AXES_RESET_ON_SUCCESS = True
 AUTHENTICATION_BACKENDS = [
-    "axes.backends.AxesStandaloneBackend",
     "django.contrib.auth.backends.ModelBackend",
 ]
