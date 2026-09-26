@@ -1,10 +1,11 @@
 import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 import ManageAccountsOutlinedIcon from "@mui/icons-material/ManageAccountsOutlined";
+import MenuIcon from "@mui/icons-material/Menu";
 import NoteAltOutlinedIcon from "@mui/icons-material/NoteAltOutlined";
 import PersonSearchOutlinedIcon from "@mui/icons-material/PersonSearchOutlined";
 import PlaylistAddCheckCircleOutlinedIcon from "@mui/icons-material/PlaylistAddCheckCircleOutlined";
 import PostAddOutlinedIcon from "@mui/icons-material/PostAddOutlined";
-import { Alert, AppBar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Stack, TextField, Toolbar, Typography } from "@mui/material";
+import { Alert, AppBar, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Stack, TextField, Toolbar, Typography } from "@mui/material";
 import dayjs from "dayjs";
 import { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
@@ -24,12 +25,15 @@ export default function MainLayout() {
   const [passwordMessage, setPasswordMessage] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleNavigationClick = (event, targetPath) => {
     if (hasUnsavedChanges && window.location.pathname !== targetPath) {
       event.preventDefault();
       setPendingNavigation(targetPath);
+      return;
     }
+    setMobileOpen(false);
   };
 
   const stayOnCurrentPage = () => {
@@ -40,6 +44,7 @@ export default function MainLayout() {
     const targetPath = pendingNavigation;
     setHasUnsavedChanges(false);
     setPendingNavigation(null);
+    setMobileOpen(false);
     if (targetPath) navigate(targetPath);
   };
 
@@ -91,38 +96,190 @@ export default function MainLayout() {
     { key: "user_management", label: "لوحة تحكم المستخدمين والصلاحيات", to: "/app/users", icon: <ManageAccountsOutlinedIcon />, visible: true },
   ];
 
+  const visibleNavItems = navItems.filter(
+    (item) => item.visible && isSidebarItemVisibleForUser(user, item.key)
+  );
+
+  const drawerContent = (
+    <>
+      <Toolbar />
+
+      <Box
+        sx={{
+          px: 2,
+          pt: { xs: 1.5, md: 2 },
+          pb: 1,
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <Box
+          component="img"
+          src="/photo/شعار الإدارة.png"
+          alt="شعار الإدارة"
+          sx={{
+            height: { xs: 170, md: 220 },
+            width: { xs: 170, md: 220 },
+            maxWidth: "100%",
+            objectFit: "contain",
+          }}
+        />
+      </Box>
+
+      <Box sx={{ px: 2, py: 1 }}>
+        <Typography
+          variant="subtitle2"
+          color="primary.contrastText"
+          sx={{ px: 1, py: 0.5, opacity: 0.9 }}
+        >
+          القائمة الرئيسية
+        </Typography>
+      </Box>
+
+      <Divider sx={{ borderColor: "primary.main", opacity: 0.45 }} />
+
+      <List
+        sx={{
+          px: 1.5,
+          py: 1.25,
+          display: "flex",
+          flexDirection: "column",
+          gap: 0.5,
+        }}
+      >
+        {visibleNavItems.map((item) => (
+          <ListItemButton
+            key={item.to}
+            component={NavLink}
+            to={item.to}
+            end={item.to === "/app"}
+            onClick={(event) => handleNavigationClick(event, item.to)}
+            sx={{
+              borderRadius: 2,
+              py: 0.85,
+              px: 1.25,
+              color: "primary.contrastText",
+              "&:hover": {
+                bgcolor: "primary.main",
+              },
+              "&.active": {
+                bgcolor: "primary.main",
+                fontWeight: 700,
+              },
+              "& .MuiListItemIcon-root": {
+                minWidth: 34,
+                color: "inherit",
+              },
+            }}
+          >
+            <ListItemIcon>{item.icon}</ListItemIcon>
+            <ListItemText
+              primary={item.label}
+              primaryTypographyProps={{ fontSize: 14 }}
+            />
+          </ListItemButton>
+        ))}
+      </List>
+
+      <Box
+        sx={{
+          display: { xs: "block", md: "none" },
+          mt: "auto",
+          px: 2,
+          pb: 2,
+        }}
+      >
+        <Divider sx={{ mb: 1.5, borderColor: "primary.main", opacity: 0.45 }} />
+
+        <Typography
+          variant="body2"
+          sx={{ mb: 1.5, opacity: 0.9, lineHeight: 1.6 }}
+        >
+          {fullName}
+          <br />
+          {departmentName}
+        </Typography>
+
+        <Stack spacing={1}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            fullWidth
+            onClick={() => {
+              setMobileOpen(false);
+              setPasswordDialogOpen(true);
+            }}
+          >
+            تغيير كلمة السر
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="inherit"
+            fullWidth
+            onClick={logout}
+          >
+            تسجيل خروج
+          </Button>
+        </Stack>
+      </Box>
+    </>
+  );
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar sx={{ position: "relative", minHeight: 64 }}>
-          <Box sx={{ position: "absolute", left: 16, display: "flex", gap: 2, alignItems: "center" }}>
-            <Typography>{dayjs().format("YYYY/MM/DD")}</Typography>
-            <Button color="inherit" onClick={() => setPasswordDialogOpen(true)}>تغيير كلمة السر</Button>
-            <Button color="inherit" onClick={logout}>
-              تسجيل خروج
-            </Button>
-          </Box>
+      <AppBar
+        position="fixed"
+        sx={{
+          zIndex: (theme) => ({
+            xs: theme.zIndex.modal + 1,
+            md: theme.zIndex.drawer + 1,
+          }),
+        }}
+      >
+        <Toolbar
+          sx={{
+            minHeight: { xs: 56, md: 64 },
+            gap: 1,
+            position: "relative",
+          }}
+        >
+          <IconButton
+            color="inherit"
+            edge="start"
+            onClick={() => setMobileOpen((open) => !open)}
+            sx={{ display: { xs: "inline-flex", md: "none" } }}
+            aria-label="فتح القائمة"
+          >
+            <MenuIcon />
+          </IconButton>
 
           <Typography
             variant="h6"
             sx={{
-              position: "absolute",
-              left: "50%",
-              transform: "translateX(-50%)",
+              flexGrow: { xs: 1, md: 0 },
               fontWeight: 700,
+              textAlign: "center",
+              fontSize: { xs: "0.95rem", sm: "1.05rem", md: "1.25rem" },
               whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              px: { xs: 0.5, md: 2 },
+              position: { xs: "static", md: "absolute" },
+              left: { md: "50%" },
+              transform: { md: "translateX(-50%)" },
             }}
           >
             النظام الشامل لتوزيع حصيلة التنفيذ
           </Typography>
 
           <Typography
-            variant="subtitle1"
+            variant="subtitle2"
             sx={{
+              display: { xs: "none", md: "block" },
               position: "absolute",
               right: 16,
               fontWeight: 700,
-              textAlign: "right",
               maxWidth: "36%",
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -131,77 +288,91 @@ export default function MainLayout() {
           >
             {`مرحباً بك (${fullName} - ${departmentName})`}
           </Typography>
+
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              position: "absolute",
+              left: 16,
+              gap: 1,
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="body2">
+              {dayjs().format("YYYY/MM/DD")}
+            </Typography>
+
+            <Button
+              color="inherit"
+              size="small"
+              onClick={() => setPasswordDialogOpen(true)}
+            >
+              تغيير كلمة السر
+            </Button>
+
+            <Button color="inherit" size="small" onClick={logout}>
+              تسجيل خروج
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
 
-      <Drawer
-        variant="permanent"
-        anchor="right"
+      <Box
+        component="nav"
         sx={{
-          width: drawerWidth,
-          [`& .MuiDrawer-paper`]: {
-            width: drawerWidth,
-            borderLeft: 0,
-            bgcolor: "primary.dark",
-            color: "primary.contrastText",
-          },
+          width: { md: drawerWidth },
+          flexShrink: { md: 0 },
         }}
       >
-        <Toolbar />
-        <Box sx={{ px: 2, pt: 2, pb: 1, display: "flex", justifyContent: "center" }}>
-          <Box
-            component="img"
-            src="/photo/شعار الإدارة.png"
-            alt="شعار الإدارة"
-            sx={{ height: 352, width: 352, objectFit: "contain" }}
-          />
-        </Box>
-        <Box sx={{ px: 2, py: 1 }}>
-          <Typography variant="subtitle2" color="primary.contrastText" sx={{ px: 1, py: 1, opacity: 0.9 }}>
-            القائمة الرئيسية
-          </Typography>
-        </Box>
-        <Divider sx={{ borderColor: "primary.main", opacity: 0.45 }} />
-        <List sx={{ px: 1.5, py: 1.5, display: "flex", flexDirection: "column", gap: 0.75 }}>
-          {navItems
-            .filter((item) => item.visible && isSidebarItemVisibleForUser(user, item.key))
-            .map((item) => (
-              <ListItemButton
-                key={item.to}
-                component={NavLink}
-                to={item.to}
-                end={item.to === "/app"}
-                onClick={(event) => handleNavigationClick(event, item.to)}
-                sx={{
-                  borderRadius: 2,
-                  py: 1,
-                  px: 1.25,
-                  color: "primary.contrastText",
-                  "&:hover": {
-                    bgcolor: "primary.main",
-                  },
-                  "&.active": {
-                    bgcolor: "primary.main",
-                    fontWeight: 700,
-                  },
-                  "& .MuiListItemIcon-root": {
-                    minWidth: 34,
-                    color: "inherit",
-                  },
-                }}
-              >
-                <ListItemIcon>{item.icon}</ListItemIcon>
-                <ListItemText primary={item.label} primaryTypographyProps={{ fontSize: 14 }} />
-              </ListItemButton>
-            ))}
-        </List>
-      </Drawer>
+        <Drawer
+          variant="temporary"
+          anchor="right"
+          open={mobileOpen}
+          onClose={() => setMobileOpen(false)}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            display: { xs: "block", md: "none" },
+            "& .MuiDrawer-paper": {
+              width: { xs: "86vw", sm: 300 },
+              maxWidth: 320,
+              boxSizing: "border-box",
+              borderLeft: 0,
+              bgcolor: "primary.dark",
+              color: "primary.contrastText",
+              display: "flex",
+              flexDirection: "column",
+            },
+          }}
+        >
+          {drawerContent}
+        </Drawer>
+
+        <Drawer
+          variant="permanent"
+          anchor="right"
+          open
+          sx={{
+            display: { xs: "none", md: "block" },
+            "& .MuiDrawer-paper": {
+              width: drawerWidth,
+              boxSizing: "border-box",
+              borderLeft: 0,
+              bgcolor: "primary.dark",
+              color: "primary.contrastText",
+              display: "flex",
+              flexDirection: "column",
+            },
+          }}
+        >
+          {drawerContent}
+        </Drawer>
+      </Box>
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          mt: 8,
+          mt: { xs: 7, md: 8 },
           mr: 0,
           position: "relative",
           minHeight: "calc(100vh - 64px)",
@@ -217,8 +388,8 @@ export default function MainLayout() {
             width: "100%",
             ml: "auto",
             mr: 0,
-            px: { xs:2, md: 4 },
-            py: 3,
+            px: { xs: 1.25, sm: 2, md: 3 },
+            py: { xs: 1.5, md: 2 },
           }}
         >
           <Outlet context={{ setHasUnsavedChanges }} />

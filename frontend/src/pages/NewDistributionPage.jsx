@@ -4,6 +4,7 @@ import {
   IconButton,
   MenuItem,
   Paper,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -363,20 +364,19 @@ export default function NewDistributionPage() {
   };
 
   return (
-    <Stack spacing={2.5}>
+    <Stack spacing={{ xs: 1.5, md: 2 }}>
       <Typography variant="h6">إدخال قسمة جديدة</Typography>
       {!canWrite && <Alert severity="warning">صلاحيتك الحالية عرض فقط، لا يمكنك إضافة أو تعديل بيانات القسمة.</Alert>}
-      {error && <Alert severity="error">{error}</Alert>}
-      {message && <Alert severity="success">{message}</Alert>}
 
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: { xs: 1.5, sm: 2 } }}>
         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 700 }}>
           القسم الأول: بيانات المدين
         </Typography>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
+        <Grid container spacing={{ xs: 1.25, md: 1.5 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
+              size="small"
               label="اسم المدين"
               value={debtorForm.full_name}
               inputProps={{ maxLength: 40 }}
@@ -386,9 +386,10 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
+              size="small"
               label="الرقم المدني"
               value={debtorForm.civil_id}
               inputProps={{ maxLength: 12, inputMode: "numeric", pattern: "[0-9]*" }}
@@ -401,14 +402,15 @@ export default function NewDistributionPage() {
         </Grid>
       </Paper>
 
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: { xs: 1.5, sm: 2 } }}>
         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 700 }}>
           القسم الثاني: بيانات القسمة
         </Typography>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 4 }}>
+        <Grid container spacing={{ xs: 1.25, md: 1.5 }}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
             <TextField
               fullWidth
+              size="small"
               label="الرقم الآلي"
               value={form.machine_number}
               inputProps={{ maxLength: 9, inputMode: "numeric", pattern: "[0-9]*" }}
@@ -418,8 +420,8 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField fullWidth select label="نوع القسمة" value={form.distribution_type} onChange={(e) => {
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
+            <TextField fullWidth size="small" select label="نوع القسمة" value={form.distribution_type} onChange={(e) => {
               setIsDirty(true);
               setForm({ ...form, distribution_type: e.target.value });
             }}>
@@ -430,9 +432,10 @@ export default function NewDistributionPage() {
               <MenuItem value="cash">مبلغ مالي</MenuItem>
             </TextField>
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
             <TextField
               fullWidth
+              size="small"
               label="مقدار الحصيلة (د.ك)"
               value={form.proceed_amount}
               inputProps={{ inputMode: "decimal" }}
@@ -443,8 +446,9 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
             <DatePickerField
+                size="small"
               label="تاريخ الإيداع أو البيع"
               value={form.deposit_or_sale_date}
               onChange={(value) => {
@@ -453,8 +457,9 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
             <DatePickerField
+                size="small"
               label="تاريخ القسمة"
               value={form.distribution_date}
               onChange={(value) => {
@@ -463,8 +468,8 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField fullWidth select label="نوع قائمة التوزيع" value={form.list_type} onChange={(e) => {
+          <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
+            <TextField fullWidth size="small" select label="نوع قائمة التوزيع" value={form.list_type} onChange={(e) => {
               setIsDirty(true);
               setForm({ ...form, list_type: e.target.value });
             }}>
@@ -476,14 +481,15 @@ export default function NewDistributionPage() {
         </Grid>
       </Paper>
 
-      <Paper sx={{ p: 2 }}>
+      <Paper sx={{ p: { xs: 1.5, sm: 2 } }}>
         <Typography variant="subtitle1" sx={{ mb: 1.5, fontWeight: 700 }}>
           القسم الثالث: جدول الدائنين
         </Typography>
-        <Grid container spacing={1.5} sx={{ mb: 1.5 }}>
-          <Grid size={{ xs: 12, md: 2 }}>
+        <Grid container spacing={{ xs: 1.25, md: 1.5 }} sx={{ mb: 1.5 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
             <TextField
               fullWidth
+              size="small"
               label="الرقم الآلي"
               value={creditor.machine_number}
               inputProps={{ maxLength: 9, inputMode: "numeric", pattern: "[0-9]*" }}
@@ -493,14 +499,15 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <TextField fullWidth label="اسم الدائن" value={creditor.creditor_name} onChange={(e) => {
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+            <TextField fullWidth size="small" label="اسم الدائن" value={creditor.creditor_name} onChange={(e) => {
               setIsDirty(true);
               setCreditor({ ...creditor, creditor_name: e.target.value });
             }} />
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
             <DatePickerField
+                size="small"
               label="تاريخ الحجز"
               value={creditor.attachment_date}
               onChange={(value) => {
@@ -509,15 +516,16 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <TextField fullWidth label="نوع الحجز" value={creditor.attachment_type} onChange={(e) => {
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+            <TextField fullWidth size="small" label="نوع الحجز" value={creditor.attachment_type} onChange={(e) => {
               setIsDirty(true);
               setCreditor({ ...creditor, attachment_type: e.target.value });
             }} />
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
             <TextField
               fullWidth
+              size="small"
               label="قيمة المديونية"
               value={creditor.debt_amount}
               inputProps={{ inputMode: "decimal" }}
@@ -527,8 +535,8 @@ export default function NewDistributionPage() {
               }}
             />
           </Grid>
-          <Grid size={{ xs: 12, md: 2 }}>
-            <TextField fullWidth select label="مرتبة الدين" value={creditor.debt_rank} onChange={(e) => {
+          <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
+            <TextField fullWidth size="small" select label="مرتبة الدين" value={creditor.debt_rank} onChange={(e) => {
               setIsDirty(true);
               setCreditor({ ...creditor, debt_rank: Number(e.target.value) });
             }}>
@@ -546,8 +554,14 @@ export default function NewDistributionPage() {
           إضافة دائن (AJAX)
         </Button>
 
-        <TableContainer sx={{ mt: 2 }}>
-          <Table size="small">
+        <TableContainer
+          sx={{
+            mt: 1.5,
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          <Table size="small" sx={{ minWidth: 1050 }}>
             <TableHead>
               <TableRow>
                 <TableCell>الرقم الآلي</TableCell>
@@ -617,7 +631,18 @@ export default function NewDistributionPage() {
         </TableContainer>
       </Paper>
 
-      <Stack direction="row" spacing={1.2} flexWrap="wrap">
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1}
+        useFlexGap
+        flexWrap="wrap"
+        sx={{
+          "& .MuiButton-root": {
+            minHeight: 40,
+            width: { xs: "100%", sm: "auto" },
+          },
+        }}
+      >
         <Button variant="outlined" onClick={calculate} disabled={!canWrite}>
           حساب القسمة
         </Button>
@@ -633,6 +658,35 @@ export default function NewDistributionPage() {
       </Stack>
 
       <Typography variant="body2">عدد الدائنين الحالي: {creditors.length}</Typography>
+
+      <Snackbar
+        open={Boolean(error || message)}
+        autoHideDuration={message ? 5000 : null}
+        onClose={(_, reason) => {
+          if (reason === "clickaway") return;
+          setError("");
+          setMessage("");
+        }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        sx={{
+          "& .MuiAlert-root": {
+            width: { xs: "calc(100vw - 24px)", sm: "auto" },
+            maxWidth: 720,
+          },
+        }}
+      >
+        <Alert
+          severity={error ? "error" : "success"}
+          variant="filled"
+          onClose={() => {
+            setError("");
+            setMessage("");
+          }}
+          sx={{ width: "100%" }}
+        >
+          {error || message}
+        </Alert>
+      </Snackbar>
     </Stack>
   );
 }
