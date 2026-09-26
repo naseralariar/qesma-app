@@ -135,6 +135,13 @@ class DistributionViewSet(DepartmentScopedMixin, viewsets.ModelViewSet):
             except Exception:
                 return response.Response({"detail": f"Invalid creditor row at index {idx}"}, status=status.HTTP_400_BAD_REQUEST)
 
+        total_debts = sum((row["debt_amount"] for row in mapped), Decimal("0.000"))
+        if total >= total_debts:
+            return response.Response(
+                {"detail": "لا يمكن إجراء القسمة لأن مقدار الحصيلة يكفي لسداد إجمالي مديونيات الدائنين. يرجى مراجعة البيانات المدخلة."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         calculated = distribute_proceeds(total, mapped)
         return response.Response(
             {

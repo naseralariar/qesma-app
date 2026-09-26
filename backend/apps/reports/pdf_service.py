@@ -1,6 +1,7 @@
 from io import BytesIO
 from pathlib import Path
 from datetime import date
+from decimal import Decimal
 
 import sys
 logfile = open("/app/printlog.txt", "a", encoding="utf-8")
@@ -566,7 +567,7 @@ def build_distribution_pdf(distribution):
         "الرقم الآلي",
         "م",
     ]
-    col_widths_cm = [4.1, 3.0, 2.6, 3.0, 2.8, 5.6, 3.2, 1.2]
+    col_widths_cm = [3.4, 3.7, 2.6, 3.0, 2.8, 5.6, 3.2, 1.2]
 
     table_x = 1.8 * cm
     table_w = sum(width * cm for width in col_widths_cm)
@@ -613,7 +614,11 @@ def build_distribution_pdf(distribution):
 
             values = [
                 "",
-                str(getattr(creditor, "distribution_amount", "0.000")),
+                (
+                    "لم يتبقَّ له شيء من الحصيلة"
+                    if getattr(creditor, "distribution_amount", None) == Decimal("0.000")
+                    else str(getattr(creditor, "distribution_amount", "0.000"))
+                ),
                 creditor.get_debt_rank_display() if hasattr(creditor, "get_debt_rank_display") else str(getattr(creditor, "debt_rank", "-")),
                 str(getattr(creditor, "debt_amount", "0.000")),
                 _format_date_ddmmyyyy(getattr(creditor, "attachment_date", "-")),
@@ -628,6 +633,10 @@ def build_distribution_pdf(distribution):
                 x_mid = (x_left + x_right) / 2
                 if col_labels[col_idx] == "اسم الدائن":
                     _draw_rtl(c, x_right / cm - 0.1, text_y, str(value)[:45])
+                elif col_labels[col_idx] == "مبلغ القسمة" and value == "لم يتبقَّ له شيء من الحصيلة":
+                    _set_session_font(c, 10)
+                    c.drawCentredString(x_mid, text_y, _ar_text(value))
+                    _set_session_font(c, 12)
                 else:
                     c.drawCentredString(x_mid, text_y, _ar_text(value))
 

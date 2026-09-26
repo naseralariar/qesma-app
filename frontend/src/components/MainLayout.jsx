@@ -22,6 +22,26 @@ export default function MainLayout() {
   const [passwordForm, setPasswordForm] = useState({ current_password: "", new_password: "", confirm_password: "" });
   const [passwordError, setPasswordError] = useState("");
   const [passwordMessage, setPasswordMessage] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
+
+  const handleNavigationClick = (event, targetPath) => {
+    if (hasUnsavedChanges && window.location.pathname !== targetPath) {
+      event.preventDefault();
+      setPendingNavigation(targetPath);
+    }
+  };
+
+  const stayOnCurrentPage = () => {
+    setPendingNavigation(null);
+  };
+
+  const continueWithoutSaving = () => {
+    const targetPath = pendingNavigation;
+    setHasUnsavedChanges(false);
+    setPendingNavigation(null);
+    if (targetPath) navigate(targetPath);
+  };
 
   const logout = async () => {
     try {
@@ -151,6 +171,7 @@ export default function MainLayout() {
                 component={NavLink}
                 to={item.to}
                 end={item.to === "/app"}
+                onClick={(event) => handleNavigationClick(event, item.to)}
                 sx={{
                   borderRadius: 2,
                   py: 1,
@@ -200,9 +221,31 @@ export default function MainLayout() {
             py: 3,
           }}
         >
-          <Outlet />
+          <Outlet context={{ setHasUnsavedChanges }} />
         </Box>
       </Box>
+
+      <Dialog
+        open={Boolean(pendingNavigation)}
+        onClose={stayOnCurrentPage}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>القسمة لم تُحفظ</DialogTitle>
+        <DialogContent>
+          <Typography>
+            لم يتم حفظ القسمة الحالية. إذا غادرت هذه الصفحة ستفقد البيانات المدخلة. هل تريد المتابعة دون حفظ؟
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={stayOnCurrentPage}>
+            البقاء في الصفحة
+          </Button>
+          <Button color="error" variant="contained" onClick={continueWithoutSaving}>
+            المتابعة دون حفظ
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={passwordDialogOpen} onClose={() => setPasswordDialogOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>تغيير كلمة السر</DialogTitle>

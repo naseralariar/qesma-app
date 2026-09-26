@@ -45,7 +45,8 @@ class Command(BaseCommand):
             user.role = "admin"
             user.department = department
 
-        user.set_password(password)
+        if created:
+            user.set_password(password)
         user.save()
         state = "created" if created else "updated"
         self.stdout.write(self.style.SUCCESS(f"Admin {state}: username={username}, department={department.code}"))

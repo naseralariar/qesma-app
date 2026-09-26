@@ -16,7 +16,8 @@ import {
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 
 import { calculateDistribution, createDebtor, createDistribution, printDistribution } from "../api/distributions";
 import DatePickerField from "../components/DatePickerField";
@@ -37,7 +38,7 @@ const emptyCreditor = {
   attachment_date: "",
   attachment_type: "",
   debt_amount: "",
-  debt_rank: 1,
+  debt_rank: "",
   distribution_amount: "0.000",
 };
 
@@ -48,7 +49,39 @@ const onlyDecimal3 = (value) => {
   if (parts.length === 1) return parts[0];
   return `${parts[0]}.${parts.slice(1).join("").slice(0, 3)}`;
 };
+
+const amountToFils = (value) => {
+  const [whole = "0", fraction = ""] = String(value || "0").split(".");
+  return (BigInt(whole || "0") * 1000n) + BigInt(fraction.padEnd(3, "0").slice(0, 3) || "0");
+};
+
 const isIsoDate = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value || "");
+
+const getCalculateErrorMessage = (err) => {
+  const detail = err?.response?.data?.detail;
+
+  if (detail === "proceed_amount is required") {
+    return "يرجى إدخال مقدار الحصيلة";
+  }
+
+  if (detail === "Invalid proceed_amount") {
+    return "مقدار الحصيلة غير صحيح. يرجى إدخال مبلغ صحيح حتى 3 منازل عشرية";
+  }
+
+  if (typeof detail === "string" && detail.startsWith("Invalid creditor row at index ")) {
+    const index = Number(detail.replace("Invalid creditor row at index ", ""));
+    if (Number.isInteger(index)) {
+      return `بيانات الدائن رقم ${index + 1} غير صحيحة. يرجى مراجعة قيمة المديونية ومرتبة الدين`;
+    }
+  }
+
+  if (typeof detail === "string" && /[\u0600-\u06FF]/.test(detail)) {
+    return detail;
+  }
+
+  return "تعذر حساب القسمة بسبب خطأ تقني. يرجى المحاولة مرة أخرى.";
+};
+
 
 export default function NewDistributionPage() {
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -56,51 +89,95 @@ export default function NewDistributionPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savedDistributionId, setSavedDistributionId] = useState(null);
+  const [isCalculated, setIsCalculated] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const { setHasUnsavedChanges } = useOutletContext();
+
+  useEffect(() => {
+    setHasUnsavedChanges(isDirty);
+
+    return () => {
+      setHasUnsavedChanges(false);
+    };
+  }, [isDirty, setHasUnsavedChanges]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (!isDirty) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   const [debtorForm, setDebtorForm] = useState({ full_name: "", civil_id: "" });
   const [form, setForm] = useState({
-    distribution_type: "cars",
+    distribution_type: "",
     deposit_or_sale_date: "",
     proceed_amount: "",
     machine_number: "",
     distribution_date: "",
-    list_type: "temporary",
+    list_type: "",
   });
   const [creditors, setCreditors] = useState([]);
   const [creditor, setCreditor] = useState(emptyCreditor);
 
   const validateDebtor = () => {
-    if (!debtorForm.full_name || !debtorForm.civil_id) return "بيانات المدين إلزامية";
-    if (/\d/.test(debtorForm.full_name)) return "اسم المدين لا يقبل أرقام";
-    if (!/^\d{12}$/.test(debtorForm.civil_id)) return "الرقم المدني يجب أن يكون 12 رقم";
-    if (debtorForm.full_name.length > 40) return "اسم المدين لا يجب أن يتجاوز 40 حرف";
+    if (!debtorForm.full_name) return "يرجى إدخال اسم المدين";
+    if (!debtorForm.civil_id) return "يرجى إدخال الرقم المدني للمدين";
+    if (/\d/.test(debtorForm.full_name)) return "اسم المدين لا يجوز أن يحتوي على أرقام";
+    if (!/^\d{12}$/.test(debtorForm.civil_id)) return "الرقم المدني للمدين يجب أن يتكون من 12 رقمًا";
+    if (debtorForm.full_name.length > 40) return "اسم المدين يجب ألا يتجاوز 40 حرفًا";
     return null;
   };
 
   const validateDistribution = () => {
-    if (!form.deposit_or_sale_date || !form.proceed_amount || !form.machine_number || !form.distribution_date || !form.list_type) {
-      return "كل بيانات القسمة إلزامية";
-    }
-    if (!/^\d{8}0$/.test(form.machine_number)) return "الرقم الآلي يجب أن يكون 9 أرقام وينتهي بصفر";
+    if (!form.distribution_type) return "يرجى اختيار نوع القسمة";
+    if (!form.deposit_or_sale_date) return "يرجى إدخال تاريخ الإيداع أو البيع";
+    if (!form.proceed_amount) return "يرجى إدخال مقدار الحصيلة";
+    if (!form.machine_number) return "يرجى إدخال الرقم الآلي للقسمة";
+    if (!form.distribution_date) return "يرجى إدخال تاريخ القسمة";
+    if (!form.list_type) return "يرجى اختيار نوع قائمة التوزيع";
+    if (!/^\d{8}0$/.test(form.machine_number)) return "الرقم الآلي للقسمة يجب أن يتكون من 9 أرقام وينتهي بصفر";
     if (!/^\d+(\.\d{1,3})?$/.test(String(form.proceed_amount || ""))) {
       return "مقدار الحصيلة يجب أن يكون رقمًا صحيحًا أو عشريًا حتى 3 منازل";
     }
-    if (!isIsoDate(form.deposit_or_sale_date) || !isIsoDate(form.distribution_date)) {
-      return "صيغة التاريخ يجب أن تكون يوم/شهر/سنة";
-    }
-    if (creditors.length === 0) return "أضف دائن واحد على الأقل";
+    if (Number(form.proceed_amount) <= 0) return "مقدار الحصيلة يجب أن يكون أكبر من صفر";
+    if (!isIsoDate(form.deposit_or_sale_date)) return "يرجى إدخال تاريخ الإيداع أو البيع بصيغة صحيحة";
+    if (!isIsoDate(form.distribution_date)) return "يرجى إدخال تاريخ القسمة بصيغة صحيحة";
+    if (creditors.length === 0) return "يجب إضافة دائن واحد على الأقل قبل حساب أو حفظ القسمة";
     return null;
   };
 
   const validateCreditor = (row) => {
-    if (!row.machine_number || !row.creditor_name || !row.attachment_date || !row.attachment_type || !row.debt_amount) {
-      return "كل حقول الدائن إلزامية";
-    }
-    if (!/^\d{8}0$/.test(row.machine_number)) return "الرقم الآلي للدائن يجب أن يكون 9 أرقام وينتهي بصفر";
+    if (!row.machine_number) return "يرجى إدخال الرقم الآلي للدائن";
+    if (!row.creditor_name) return "يرجى إدخال اسم الدائن";
+    if (!row.attachment_date) return "يرجى إدخال تاريخ الحجز";
+    if (!row.attachment_type) return "يرجى اختيار نوع الحجز";
+    if (!row.debt_amount) return "يرجى إدخال قيمة المديونية";
+    if (!row.debt_rank) return "يرجى اختيار مرتبة الدين";
+    if (!/^\d{8}0$/.test(row.machine_number)) return "الرقم الآلي للدائن يجب أن يتكون من 9 أرقام وينتهي بصفر";
     if (!/^\d+(\.\d{1,3})?$/.test(String(row.debt_amount || ""))) {
       return "قيمة المديونية يجب أن تكون رقمًا صحيحًا أو عشريًا حتى 3 منازل";
     }
-    if (!isIsoDate(row.attachment_date)) return "صيغة تاريخ الحجز يجب أن تكون يوم/شهر/سنة";
+    if (Number(row.debt_amount) <= 0) return "قيمة المديونية يجب أن تكون أكبر من صفر";
+    if (!isIsoDate(row.attachment_date)) return "يرجى إدخال تاريخ الحجز بصيغة صحيحة";
+    return null;
+  };
+
+  const validateProceedsAgainstDebts = () => {
+    const totalDebts = creditors.reduce(
+      (sum, row) => sum + amountToFils(row.debt_amount),
+      0n
+    );
+    const proceeds = amountToFils(form.proceed_amount);
+
+    if (proceeds >= totalDebts) {
+      return "لا يمكن إجراء القسمة لأن مقدار الحصيلة يكفي لسداد إجمالي مديونيات الدائنين. يرجى مراجعة البيانات المدخلة.";
+    }
+
     return null;
   };
 
@@ -110,6 +187,8 @@ export default function NewDistributionPage() {
     if (err) return setError(err);
 
     setCreditors((prev) => [...prev, { ...creditor, debt_rank: Number(creditor.debt_rank), distribution_amount: "0.000" }]);
+    setIsCalculated(false);
+    setIsDirty(true);
     setCreditor(emptyCreditor);
   };
 
@@ -117,9 +196,13 @@ export default function NewDistributionPage() {
     const ok = window.confirm("هل أنت متأكد من حذف هذا الدائن؟");
     if (!ok) return;
     setCreditors((prev) => prev.filter((_, i) => i !== index));
+    setIsCalculated(false);
+    setIsDirty(true);
   };
 
   const updateCreditor = (index, key, value) => {
+    setIsCalculated(false);
+    setIsDirty(true);
     setCreditors((prev) =>
       prev.map((row, i) => {
         if (i !== index) return row;
@@ -135,10 +218,13 @@ export default function NewDistributionPage() {
       if (!form.proceed_amount) return setError("أدخل مقدار الحصيلة قبل الحساب");
       if (creditors.length === 0) return setError("أضف دائنين قبل الحساب");
 
-      for (const row of creditors) {
-        const err = validateCreditor(row);
-        if (err) return setError(err);
+      for (let index = 0; index < creditors.length; index += 1) {
+        const err = validateCreditor(creditors[index]);
+        if (err) return setError(`الدائن رقم ${index + 1}: ${err}`);
       }
+
+      const proceedsErr = validateProceedsAgainstDebts();
+      if (proceedsErr) return setError(proceedsErr);
 
       const calculatePayload = {
         proceed_amount: form.proceed_amount,
@@ -148,9 +234,10 @@ export default function NewDistributionPage() {
       const data = await calculateDistribution(calculatePayload);
       const distributionByIndex = new Map(data.creditors.map((item) => [item.client_index, item.distribution_amount]));
       setCreditors((prev) => prev.map((row, idx) => ({ ...row, distribution_amount: distributionByIndex.get(idx) || "0.000" })));
+      setIsCalculated(true);
       setMessage("تم حساب القسمة بنجاح");
-    } catch {
-      setError("تعذر حساب القسمة، تحقق من البيانات المدخلة");
+    } catch (err) {
+      setError(getCalculateErrorMessage(err));
     }
   };
 
@@ -160,15 +247,60 @@ export default function NewDistributionPage() {
     setSavedDistributionId(null);
     setDebtorForm({ full_name: "", civil_id: "" });
     setForm({
-      distribution_type: "cars",
+      distribution_type: "",
       deposit_or_sale_date: "",
       proceed_amount: "",
       machine_number: "",
       distribution_date: "",
-      list_type: "temporary",
+      list_type: "",
     });
     setCreditors([]);
     setCreditor(emptyCreditor);
+    setIsCalculated(false);
+    setIsDirty(false);
+  };
+
+  const getSaveErrorMessage = (err) => {
+    const detail = err?.response?.data;
+
+    if (Array.isArray(detail?.non_field_errors) && detail.non_field_errors.length > 0) {
+      return detail.non_field_errors[0];
+    }
+
+    if (typeof detail === "string" && detail) {
+      return detail;
+    }
+
+    if (detail && typeof detail === "object") {
+      const fieldLabels = {
+        debtor: "المدين",
+        department: "الإدارة",
+        distribution_type: "نوع القسمة",
+        deposit_or_sale_date: "تاريخ الإيداع أو البيع",
+        proceed_amount: "مقدار الحصيلة",
+        machine_number: "الرقم الآلي للقسمة",
+        distribution_date: "تاريخ القسمة",
+        list_type: "نوع قائمة التوزيع",
+        creditors: "بيانات الدائنين",
+        full_name: "اسم المدين",
+        civil_id: "الرقم المدني للمدين",
+      };
+
+      for (const [field, value] of Object.entries(detail)) {
+        const message = Array.isArray(value) ? value[0] : value;
+
+        if (typeof message === "string" && message) {
+          const label = fieldLabels[field] || field;
+          return `${label}: ${message}`;
+        }
+
+        if (value && typeof value === "object") {
+          return `${fieldLabels[field] || field}: توجد بيانات غير صحيحة، يرجى مراجعتها`;
+        }
+      }
+    }
+
+    return "تعذر حفظ القسمة بسبب خطأ تقني. يرجى المحاولة مرة أخرى.";
   };
 
   const submit = async () => {
@@ -181,6 +313,18 @@ export default function NewDistributionPage() {
 
       const distributionErr = validateDistribution();
       if (distributionErr) return setError(distributionErr);
+
+      if (!isCalculated) {
+        return setError("يرجى حساب القسمة ومراجعة مبالغ التوزيع قبل الحفظ.");
+      }
+
+      for (let index = 0; index < creditors.length; index += 1) {
+        const err = validateCreditor(creditors[index]);
+        if (err) return setError(`الدائن رقم ${index + 1}: ${err}`);
+      }
+
+      const proceedsErr = validateProceedsAgainstDebts();
+      if (proceedsErr) return setError(proceedsErr);
 
       const departmentId = user.department;
       if (!departmentId) return setError("تعذر تحديد الإدارة الحالية للمستخدم");
@@ -199,18 +343,10 @@ export default function NewDistributionPage() {
       });
 
       setSavedDistributionId(result.id);
+      setIsDirty(false);
       setMessage(`تم حفظ القسمة بنجاح - رقم القسمة ${result.serial_number || result.id}`);
     } catch (err) {
-      const detail = err?.response?.data;
-      if (Array.isArray(detail?.non_field_errors) && detail.non_field_errors.length > 0) {
-        setError(detail.non_field_errors[0]);
-        return;
-      }
-      if (typeof detail === "string" && detail) {
-        setError(detail);
-        return;
-      }
-      setError("تعذر حفظ القسمة، تأكد من صحة البيانات المدخلة");
+      setError(getSaveErrorMessage(err));
     }
   };
 
@@ -244,7 +380,10 @@ export default function NewDistributionPage() {
               label="اسم المدين"
               value={debtorForm.full_name}
               inputProps={{ maxLength: 40 }}
-              onChange={(e) => setDebtorForm({ ...debtorForm, full_name: e.target.value })}
+              onChange={(e) => {
+                setIsDirty(true);
+                setDebtorForm({ ...debtorForm, full_name: e.target.value });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -253,7 +392,10 @@ export default function NewDistributionPage() {
               label="الرقم المدني"
               value={debtorForm.civil_id}
               inputProps={{ maxLength: 12, inputMode: "numeric", pattern: "[0-9]*" }}
-              onChange={(e) => setDebtorForm({ ...debtorForm, civil_id: onlyDigits(e.target.value, 12) })}
+              onChange={(e) => {
+                setIsDirty(true);
+                setDebtorForm({ ...debtorForm, civil_id: onlyDigits(e.target.value, 12) });
+              }}
             />
           </Grid>
         </Grid>
@@ -270,11 +412,18 @@ export default function NewDistributionPage() {
               label="الرقم الآلي"
               value={form.machine_number}
               inputProps={{ maxLength: 9, inputMode: "numeric", pattern: "[0-9]*" }}
-              onChange={(e) => setForm({ ...form, machine_number: onlyDigits(e.target.value, 9) })}
+              onChange={(e) => {
+                setIsDirty(true);
+                setForm({ ...form, machine_number: onlyDigits(e.target.value, 9) });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
-            <TextField fullWidth select label="نوع القسمة" value={form.distribution_type} onChange={(e) => setForm({ ...form, distribution_type: e.target.value })}>
+            <TextField fullWidth select label="نوع القسمة" value={form.distribution_type} onChange={(e) => {
+              setIsDirty(true);
+              setForm({ ...form, distribution_type: e.target.value });
+            }}>
+              <MenuItem value="" disabled>اختر نوع القسمة</MenuItem>
               <MenuItem value="cars">سيارات</MenuItem>
               <MenuItem value="banks">بنوك</MenuItem>
               <MenuItem value="real_estate">عقار</MenuItem>
@@ -287,25 +436,39 @@ export default function NewDistributionPage() {
               label="مقدار الحصيلة (د.ك)"
               value={form.proceed_amount}
               inputProps={{ inputMode: "decimal" }}
-              onChange={(e) => setForm({ ...form, proceed_amount: onlyDecimal3(e.target.value) })}
+              onChange={(e) => {
+                setIsCalculated(false);
+                setIsDirty(true);
+                setForm({ ...form, proceed_amount: onlyDecimal3(e.target.value) });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
             <DatePickerField
               label="تاريخ الإيداع أو البيع"
               value={form.deposit_or_sale_date}
-              onChange={(value) => setForm({ ...form, deposit_or_sale_date: value })}
+              onChange={(value) => {
+                setIsDirty(true);
+                setForm({ ...form, deposit_or_sale_date: value });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
             <DatePickerField
               label="تاريخ القسمة"
               value={form.distribution_date}
-              onChange={(value) => setForm({ ...form, distribution_date: value })}
+              onChange={(value) => {
+                setIsDirty(true);
+                setForm({ ...form, distribution_date: value });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 4 }}>
-            <TextField fullWidth select label="نوع قائمة التوزيع" value={form.list_type} onChange={(e) => setForm({ ...form, list_type: e.target.value })}>
+            <TextField fullWidth select label="نوع قائمة التوزيع" value={form.list_type} onChange={(e) => {
+              setIsDirty(true);
+              setForm({ ...form, list_type: e.target.value });
+            }}>
+              <MenuItem value="" disabled>اختر نوع قائمة التوزيع</MenuItem>
               <MenuItem value="temporary">مؤقتة</MenuItem>
               <MenuItem value="final">نهائية</MenuItem>
             </TextField>
@@ -324,21 +487,33 @@ export default function NewDistributionPage() {
               label="الرقم الآلي"
               value={creditor.machine_number}
               inputProps={{ maxLength: 9, inputMode: "numeric", pattern: "[0-9]*" }}
-              onChange={(e) => setCreditor({ ...creditor, machine_number: onlyDigits(e.target.value, 9) })}
+              onChange={(e) => {
+                setIsDirty(true);
+                setCreditor({ ...creditor, machine_number: onlyDigits(e.target.value, 9) });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
-            <TextField fullWidth label="اسم الدائن" value={creditor.creditor_name} onChange={(e) => setCreditor({ ...creditor, creditor_name: e.target.value })} />
+            <TextField fullWidth label="اسم الدائن" value={creditor.creditor_name} onChange={(e) => {
+              setIsDirty(true);
+              setCreditor({ ...creditor, creditor_name: e.target.value });
+            }} />
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
             <DatePickerField
               label="تاريخ الحجز"
               value={creditor.attachment_date}
-              onChange={(value) => setCreditor({ ...creditor, attachment_date: value })}
+              onChange={(value) => {
+                setIsDirty(true);
+                setCreditor({ ...creditor, attachment_date: value });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
-            <TextField fullWidth label="نوع الحجز" value={creditor.attachment_type} onChange={(e) => setCreditor({ ...creditor, attachment_type: e.target.value })} />
+            <TextField fullWidth label="نوع الحجز" value={creditor.attachment_type} onChange={(e) => {
+              setIsDirty(true);
+              setCreditor({ ...creditor, attachment_type: e.target.value });
+            }} />
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
             <TextField
@@ -346,11 +521,18 @@ export default function NewDistributionPage() {
               label="قيمة المديونية"
               value={creditor.debt_amount}
               inputProps={{ inputMode: "decimal" }}
-              onChange={(e) => setCreditor({ ...creditor, debt_amount: onlyDecimal3(e.target.value) })}
+              onChange={(e) => {
+                setIsDirty(true);
+                setCreditor({ ...creditor, debt_amount: onlyDecimal3(e.target.value) });
+              }}
             />
           </Grid>
           <Grid size={{ xs: 12, md: 2 }}>
-            <TextField fullWidth select label="مرتبة الدين" value={creditor.debt_rank} onChange={(e) => setCreditor({ ...creditor, debt_rank: Number(e.target.value) })}>
+            <TextField fullWidth select label="مرتبة الدين" value={creditor.debt_rank} onChange={(e) => {
+              setIsDirty(true);
+              setCreditor({ ...creditor, debt_rank: Number(e.target.value) });
+            }}>
+              <MenuItem value="" disabled>اختر مرتبة الدين</MenuItem>
               {rankOptions.map((r) => (
                 <MenuItem key={r.value} value={r.value}>
                   {r.label}

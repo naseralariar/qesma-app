@@ -91,6 +91,22 @@ class DistributionSerializer(serializers.ModelSerializer):
         if existing.exists():
             raise serializers.ValidationError("هذه القسمة مدخلة مسبقا")
 
+        creditors = attrs.get("creditors")
+        if creditors is None and self.instance is not None:
+            creditors = list(
+                self.instance.creditors.values("debt_amount", "debt_rank")
+            )
+
+        if creditors:
+            total_debts = sum(
+                (Decimal(str(row["debt_amount"])) for row in creditors),
+                Decimal("0.000"),
+            )
+            if proceed_amount >= total_debts:
+                raise serializers.ValidationError(
+                    "لا يمكن إجراء القسمة لأن مقدار الحصيلة يكفي لسداد إجمالي مديونيات الدائنين. يرجى مراجعة البيانات المدخلة."
+                )
+
         return attrs
 
     def create(self, validated_data):

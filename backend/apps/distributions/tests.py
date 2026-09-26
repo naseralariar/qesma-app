@@ -91,8 +91,8 @@ class DistributionAPIScopeTests(TestCase):
         response = self.client.get(reverse("distribution-list"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["id"], self.dist_a.id)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["id"], self.dist_a.id)
 
     def test_admin_list_sees_all_departments(self):
         self.client.force_authenticate(user=self.admin)
@@ -100,7 +100,7 @@ class DistributionAPIScopeTests(TestCase):
         response = self.client.get(reverse("distribution-list"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data["results"]), 2)
 
     def test_non_admin_cannot_retrieve_other_department_distribution(self):
         self.client.force_authenticate(user=self.officer_a)
@@ -117,7 +117,7 @@ class DistributionAPIScopeTests(TestCase):
         response = self.client.get(reverse("distribution-list"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data["results"]), 2)
 
     def test_revoke_edit_permission_blocks_distribution_update(self):
         self.officer_a.permission_edit_distribution = False
@@ -159,6 +159,76 @@ class DistributionAPIScopeTests(TestCase):
         self.assertEqual(response.data["creditors"][1]["distribution_amount"], "75.000")
         self.assertEqual(response.data["creditors"][2]["distribution_amount"], "0.000")
 
+    def test_calculate_rejects_proceeds_equal_to_or_greater_than_total_debts(self):
+        self.client.force_authenticate(user=self.officer_a)
+
+        expected_message = (
+            "لا يمكن إجراء القسمة لأن مقدار الحصيلة يكفي لسداد إجمالي مديونيات الدائنين. "
+            "يرجى مراجعة البيانات المدخلة."
+        )
+
+        for proceed_amount in ("300.000", "400.000"):
+            with self.subTest(proceed_amount=proceed_amount):
+                payload = {
+                    "proceed_amount": proceed_amount,
+                    "creditors": [
+                        {
+                            "debt_amount": "300.000",
+                            "debt_rank": 1,
+                        }
+                    ],
+                }
+
+                response = self.client.post(
+                    reverse("distribution-calculate"),
+                    payload,
+                    format="json",
+                )
+
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(response.data["detail"], expected_message)
+
+    def test_create_rejects_proceeds_equal_to_or_greater_than_total_debts(self):
+        self.client.force_authenticate(user=self.officer_a)
+
+        expected_message = (
+            "لا يمكن إجراء القسمة لأن مقدار الحصيلة يكفي لسداد إجمالي مديونيات الدائنين. "
+            "يرجى مراجعة البيانات المدخلة."
+        )
+
+        for index, proceed_amount in enumerate(("300.000", "400.000"), start=1):
+            with self.subTest(proceed_amount=proceed_amount):
+                payload = {
+                    "debtor": self.dist_a.debtor_id,
+                    "department": self.dep_a.id,
+                    "distribution_type": "cash",
+                    "deposit_or_sale_date": f"2026-02-{20 + index:02d}",
+                    "proceed_amount": proceed_amount,
+                    "machine_number": f"8{index}3456780",
+                    "distribution_date": "2026-02-25",
+                    "list_type": "temporary",
+                    "notes": "",
+                    "creditors": [
+                        {
+                            "machine_number": f"9{index}3456780",
+                            "creditor_name": "دائن اختبار",
+                            "attachment_date": "2026-02-01",
+                            "attachment_type": "حجز",
+                            "debt_amount": "300.000",
+                            "debt_rank": 1,
+                        }
+                    ],
+                }
+
+                response = self.client.post(
+                    reverse("distribution-list"),
+                    payload,
+                    format="json",
+                )
+
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.assertEqual(response.data["non_field_errors"][0], expected_message)
+
     def test_same_debtor_allows_different_proceed_amount(self):
         self.client.force_authenticate(user=self.officer_a)
         payload = {
@@ -177,7 +247,7 @@ class DistributionAPIScopeTests(TestCase):
                     "creditor_name": "دائن 1",
                     "attachment_date": "2026-02-01",
                     "attachment_type": "حجز",
-                    "debt_amount": "300.000",
+                    "debt_amount": "1500.000",
                     "debt_rank": 1,
                 }
             ],
@@ -205,7 +275,7 @@ class DistributionAPIScopeTests(TestCase):
                     "creditor_name": "دائن 1",
                     "attachment_date": "2026-02-01",
                     "attachment_type": "حجز",
-                    "debt_amount": "300.000",
+                    "debt_amount": "1500.000",
                     "debt_rank": 1,
                 }
             ],
@@ -262,7 +332,7 @@ class DistributionAPIScopeTests(TestCase):
                     "creditor_name": "دائن 1",
                     "attachment_date": "2026-02-01",
                     "attachment_type": "حجز",
-                    "debt_amount": "300.000",
+                    "debt_amount": "1500.000",
                     "debt_rank": 1,
                 }
             ],

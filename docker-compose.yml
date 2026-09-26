@@ -28,6 +28,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
     command: >
       sh -c "python manage.py migrate &&
              python manage.py bootstrap_system --username $${INITIAL_ADMIN_USERNAME} --password $${INITIAL_ADMIN_PASSWORD} --department-code $${INITIAL_ADMIN_DEPARTMENT} &&
@@ -40,7 +42,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "127.0.0.1:8080:80"
 
 volumes:
   postgres_data:

@@ -75,11 +75,6 @@ class UserSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"sidebar_hidden_items": "توجد عناصر قائمة جانبية غير معتمدة"})
         return attrs
 
-    def create(self, validated_data):
-        if "sidebar_hidden_items" not in validated_data:
-            role = validated_data.get("role", "viewer")
-            validated_data["sidebar_hidden_items"] = default_hidden_sidebar_items_for_role(role)
-        return super().create(validated_data)
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -87,6 +82,10 @@ class UserSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        if "sidebar_hidden_items" not in validated_data:
+            role = validated_data.get("role", "viewer")
+            validated_data["sidebar_hidden_items"] = default_hidden_sidebar_items_for_role(role)
+
         password = validated_data.pop("password", None)
         user = User(**validated_data)
         if password:
